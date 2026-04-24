@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Win The Weekend — Cook County Cooks</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body {
+    height: 100%;
+    width: 100%;
+    background: #000;
+    overflow: hidden;
+  }
+  .stage {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+  }
+  .slide {
+    position: absolute;
+    inset: 0;
+    opacity: 0;
+    transition: opacity 1.2s ease-in-out;
+    pointer-events: none;
+  }
+  .slide.active {
+    opacity: 1;
+    pointer-events: auto;
+  }
+  .slide iframe {
+    width: 100%;
+    height: 100%;
+    border: 0;
+    display: block;
+    background: #0a0a0a;
+  }
+  /* Fallback card shown only if iframe fails to load */
+  .fallback {
+    position: absolute;
+    inset: 0;
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding: 40px;
+    background: linear-gradient(135deg, #0d1321, #06080f);
+    color: #fff;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif;
+  }
+  .slide.show-fallback .fallback { display: flex; }
+  .slide.show-fallback iframe { display: none; }
+  .fallback h1 {
+    font-size: clamp(40px, 6vw, 72px);
+    letter-spacing: 2px;
+    margin-bottom: 18px;
+    text-transform: uppercase;
+  }
+  .fallback p {
+    max-width: 560px;
+    color: #9aa5bd;
+    font-size: 15px;
+    line-height: 1.6;
+    margin-bottom: 28px;
+  }
+  .fallback a {
+    background: #00f0ff;
+    color: #001218;
+    padding: 14px 26px;
+    border-radius: 8px;
+    text-decoration: none;
+    font-weight: 700;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    font-size: 13px;
+  }
+  /* Thin progress bar at the very top */
+  .progress {
+    position: fixed;
+    top: 0;
+    left: 0;
+    height: 3px;
+    width: 0%;
+    background: linear-gradient(90deg, #00f0ff, #ff3860);
+    z-index: 100;
+    transition: width 0.1s linear;
+    box-shadow: 0 0 10px rgba(0, 240, 255, 0.6);
+  }
+  /* Small label so you know which deck is on screen */
+  .label {
+    position: fixed;
+    top: 14px;
+    right: 18px;
+    z-index: 100;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif;
+    font-size: 11px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: rgba(255,255,255,0.6);
+    background: rgba(0,0,0,0.45);
+    padding: 6px 10px;
+    border-radius: 4px;
+    backdrop-filter: blur(6px);
+  }
+</style>
+</head>
+<body>
+<div class="progress" id="progress"></div>
+<div class="label" id="label">Big South</div>
+<div class="stage">
+  <section class="slide active" data-name="Big South" data-url="Win-The-Weekend---Big-South.html">
+    <iframe
+      src="Win-The-Weekend---Big-South.html"
+      title="Win The Weekend — Big South"
+      allow="autoplay; fullscreen"></iframe>
+    <div class="fallback">
+      <h1>Big South</h1>
+      <p>Couldn't load <code>Win-The-Weekend---Big-South.html</code>. Make sure it's in the same folder as this file.</p>
+      <a href="Win-The-Weekend---Big-South.html" target="_blank" rel="noopener">Open Big South →</a>
+    </div>
+  </section>
+  <section class="slide" data-name="Chicago" data-url="Win-The-Weekend---Chicago.html">
+    <iframe
+      data-src="Win-The-Weekend---Chicago.html"
+      title="Win The Weekend — Chicago"
+      allow="autoplay; fullscreen"></iframe>
+    <div class="fallback">
+      <h1>Chicago</h1>
+      <p>Couldn't load <code>Win-The-Weekend---Chicago.html</code>. Make sure it's in the same folder as this file.</p>
+      <a href="Win-The-Weekend---Chicago.html" target="_blank" rel="noopener">Open Chicago →</a>
+    </div>
+  </section>
+</div>
+<script>
+  // Each child deck rotates its OWN internal slides every 7s and has 16–18 slides.
+  // So give each iframe enough screen time to actually show its content before swapping.
+  // 16 slides * 7s = ~112s per deck. Default to 2 minutes per deck.
+  const SLIDE_DURATION = 120000; // 2 minutes per deck
+  const slides = document.querySelectorAll('.slide');
+  const progress = document.getElementById('progress');
+  const label = document.getElementById('label');
+  let currentIndex = 0;
+  let elapsed = 0;
+
+  function showSlide(index) {
+    slides.forEach((s, i) => s.classList.toggle('active', i === index));
+    currentIndex = index;
+    elapsed = 0;
+    progress.style.width = '0%';
+    const name = slides[index].getAttribute('data-name');
+    if (name) label.textContent = name;
+
+    // Lazy-load any iframe that hasn't been hydrated yet
+    const iframe = slides[index].querySelector('iframe');
+    if (iframe && !iframe.src && iframe.dataset.src) {
+      iframe.src = iframe.dataset.src;
+    }
+  }
+
+  // Tick every 100ms: update progress bar, advance slide on timeout
+  setInterval(() => {
+    elapsed += 100;
+    const pct = Math.min((elapsed / SLIDE_DURATION) * 100, 100);
+    progress.style.width = pct + '%';
+    if (elapsed >= SLIDE_DURATION) {
+      const nextIndex = (currentIndex + 1) % slides.length;
+      showSlide(nextIndex);
+    }
+  }, 100);
+
+  // Iframe load failure detection — show fallback card if a frame doesn't load in 8s
+  slides.forEach(slide => {
+    const iframe = slide.querySelector('iframe');
+    let loaded = false;
+    iframe.addEventListener('load', () => {
+      loaded = true;
+      try {
+        const doc = iframe.contentDocument;
+        if (doc && doc.body && doc.body.childElementCount === 0) {
+          slide.classList.add('show-fallback');
+        }
+      } catch (_) {
+        // Cross-origin denial = iframe loaded fine, no action needed
+      }
+    });
+    setTimeout(() => {
+      if (!loaded && iframe.src) slide.classList.add('show-fallback');
+    }, 8000);
+  });
+
+  // Click anywhere to skip to the next deck
+  document.addEventListener('click', () => {
+    showSlide((currentIndex + 1) % slides.length);
+  });
+</script>
+</body>
+</html>
